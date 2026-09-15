@@ -1,6 +1,7 @@
 # Fretboard.js
 
 ![ChordShape demo](https://img.shields.io/badge/dependencies-none-brightgreen) ![ChordShape demo](https://img.shields.io/badge/JavaScript-vanilla-yellow)
+
 A dependency-free, plain-JavaScript plugin that renders a guitar fretboard as SVG and labels every note on it. No build step, no framework — drop in two files and call one constructor.
 
 ## Features
