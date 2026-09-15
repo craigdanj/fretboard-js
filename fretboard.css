@@ -1,0 +1,90 @@
+/* Fretboard.js — default styling
+   Palette grounded in real fretboard materials: rosewood body, brass fret wire,
+   bone nut and inlays. Swap the custom properties below to retheme. */
+
+.fretboard-svg {
+	--fb-wood: #2b1b12;
+	--fb-wood-edge: #1c1109;
+	--fb-fretwire: #c9a66b;
+	--fb-nut: #f5e6c8;
+	--fb-string: #e9dcc0;
+	--fb-inlay: rgba(245, 230, 200, 0.35);
+	--fb-fret-number: #a9835a;
+	--fb-note-bg: #4a2f1e;
+	--fb-note-border: #7a5636;
+	--fb-note-text: #f5e6c8;
+	--fb-highlight-bg: #8b5e3c;
+	--fb-highlight-border: #c9a66b;
+	--fb-root-bg: #c9a66b;
+	--fb-root-text: #2b1b12;
+	--fb-open-divider: rgba(245, 230, 200, 0.25);
+
+	display: block;
+	max-width: 100%;
+	height: auto;
+	font-family: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+}
+
+.fretboard-wood {
+	fill: var(--fb-wood);
+	stroke: var(--fb-wood-edge);
+	stroke-width: 1;
+}
+
+.fretboard-fretwire {
+	stroke: var(--fb-fretwire);
+	stroke-width: 2.5;
+}
+
+.fretboard-nut {
+	fill: var(--fb-nut);
+}
+
+.fretboard-string {
+	stroke: var(--fb-string);
+	stroke-linecap: round;
+}
+
+.fretboard-inlay {
+	fill: var(--fb-inlay);
+}
+
+.fretboard-fret-number {
+	fill: var(--fb-fret-number);
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.fretboard-open-divider {
+	stroke: var(--fb-open-divider);
+	stroke-width: 1;
+	stroke-dasharray: 2 3;
+}
+
+.fretboard-note-dot {
+	fill: var(--fb-note-bg);
+	stroke: var(--fb-note-border);
+	stroke-width: 1.5;
+}
+
+.fretboard-note-dot--highlight {
+	fill: var(--fb-highlight-bg);
+	stroke: var(--fb-highlight-border);
+}
+
+.fretboard-note-dot--root {
+	fill: var(--fb-root-bg);
+	stroke: var(--fb-root-bg);
+}
+
+.fretboard-note-label {
+	fill: var(--fb-note-text);
+	font-size: 11px;
+	font-weight: 600;
+	pointer-events: none;
+	user-select: none;
+}
+
+.fretboard-note-label--root {
+	fill: var(--fb-root-text);
+}
