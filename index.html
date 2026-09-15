@@ -1,272 +1,311 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Fretboard.js — guitar fretboard visualizer</title>
-<link rel="stylesheet" href="fretboard.css" />
-<style>
-	@font-face {
-		/* Falls back gracefully if the environment has no network access to fonts. */
-		font-family: 'Fraunces';
-		src: local('Fraunces');
-	}
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fretboard.js — guitar fretboard visualizer</title>
+    <link rel="stylesheet" href="fretboard.css" />
+    <style>
+      @font-face {
+        /* Falls back gracefully if the environment has no network access to fonts. */
+        font-family: "Fraunces";
+        src: local("Fraunces");
+      }
 
-	:root {
-		--page-bg: #e8dcc4;
-		--page-bg-edge: #ded0b2;
-		--ink: #2b1b12;
-		--ink-soft: #5c4630;
-		--rule: #c4b493;
-		--panel-bg: #f2e8d3;
-		--brass: #c9a66b;
-		--brass-deep: #a9835a;
-	}
+      :root {
+        --page-bg: #e8dcc4;
+        --page-bg-edge: #ded0b2;
+        --ink: #2b1b12;
+        --ink-soft: #5c4630;
+        --rule: #c4b493;
+        --panel-bg: #f2e8d3;
+        --brass: #c9a66b;
+        --brass-deep: #a9835a;
+      }
 
-	* { box-sizing: border-box; }
+      * {
+        box-sizing: border-box;
+      }
 
-	html, body {
-		margin: 0;
-		padding: 0;
-		background: var(--page-bg);
-		color: var(--ink);
-		font-family: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
-	}
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--page-bg);
+        color: var(--ink);
+        font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+      }
 
-	body {
-		background-image: radial-gradient(circle at 20% 10%, var(--page-bg-edge), var(--page-bg) 60%);
-		min-height: 100vh;
-	}
+      body {
+        background-image: radial-gradient(
+          circle at 20% 10%,
+          var(--page-bg-edge),
+          var(--page-bg) 60%
+        );
+        min-height: 100vh;
+      }
 
-	.wrap {
-		max-width: 880px;
-		margin: 0 auto;
-		padding: 56px 24px 80px;
-	}
+      .wrap {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 56px 24px 80px;
+      }
 
-	header.masthead {
-		margin-bottom: 36px;
-	}
+      header.masthead {
+        margin-bottom: 36px;
+      }
 
-	header.masthead h1 {
-		font-family: 'Fraunces', 'Iowan Old Style', Georgia, serif;
-		font-weight: 600;
-		font-size: 2rem;
-		letter-spacing: 0.01em;
-		margin: 0 0 6px;
-	}
+      header.masthead h1 {
+        font-family: "Fraunces", "Iowan Old Style", Georgia, serif;
+        font-weight: 600;
+        font-size: 2rem;
+        letter-spacing: 0.01em;
+        margin: 0 0 6px;
+      }
 
-	header.masthead p {
-		margin: 0;
-		color: var(--ink-soft);
-		font-size: 1rem;
-		max-width: 58ch;
-		line-height: 1.5;
-	}
+      header.masthead p {
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 1rem;
+        max-width: 58ch;
+        line-height: 1.5;
+      }
 
-	.stage {
-		background: var(--panel-bg);
-		border: 1px solid var(--rule);
-		border-radius: 6px;
-		padding: 32px 28px 20px;
-		overflow-x: auto;
-	}
+      .stage {
+        background: var(--panel-bg);
+        border: 1px solid var(--rule);
+        border-radius: 6px;
+        padding: 32px 28px 20px;
+        overflow-x: auto;
+      }
 
-	#fretboard-container {
-		min-width: 640px;
-	}
+      #fretboard-container {
+        min-width: 640px;
+      }
 
-	.control-strip {
-		margin-top: 22px;
-		background: var(--panel-bg);
-		border: 1px solid var(--rule);
-		border-radius: 6px;
-		padding: 18px 22px;
-		display: flex;
-		flex-wrap: wrap;
-		gap: 20px 28px;
-		align-items: end;
-	}
+      .control-strip {
+        margin-top: 22px;
+        background: var(--panel-bg);
+        border: 1px solid var(--rule);
+        border-radius: 6px;
+        padding: 18px 22px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px 28px;
+        align-items: end;
+      }
 
-	.control {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-		min-width: 150px;
-	}
+      .control {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 150px;
+      }
 
-	.control label {
-		font-family: 'Iowan Old Style', Georgia, serif;
-		font-size: 0.85rem;
-		color: var(--ink-soft);
-	}
+      .control label {
+        font-family: "Iowan Old Style", Georgia, serif;
+        font-size: 0.85rem;
+        color: var(--ink-soft);
+      }
 
-	.control select,
-	.control input[type='number'] {
-		font-family: inherit;
-		font-size: 0.95rem;
-		padding: 7px 10px;
-		border: 1px solid var(--rule);
-		border-radius: 4px;
-		background: #fff;
-		color: var(--ink);
-	}
+      .control select,
+      .control input[type="number"] {
+        font-family: inherit;
+        font-size: 0.95rem;
+        padding: 7px 10px;
+        border: 1px solid var(--rule);
+        border-radius: 4px;
+        background: #fff;
+        color: var(--ink);
+      }
 
-	.control select:disabled,
-	.control input[type='number']:disabled {
-		background: rgba(0, 0, 0, 0.04);
-		color: var(--ink-soft);
-		cursor: not-allowed;
-	}
+      .control select:disabled,
+      .control input[type="number"]:disabled {
+        background: rgba(0, 0, 0, 0.04);
+        color: var(--ink-soft);
+        cursor: not-allowed;
+      }
 
-	.control-strip .divider {
-		width: 1px;
-		align-self: stretch;
-		background: var(--rule);
-		margin: 0 4px;
-	}
+      .control-strip .divider {
+        width: 1px;
+        align-self: stretch;
+        background: var(--rule);
+        margin: 0 4px;
+      }
 
-	.checkbox-row {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding-bottom: 8px;
-	}
+      .checkbox-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 8px;
+      }
 
-	.checkbox-row label {
-		font-size: 0.9rem;
-		color: var(--ink);
-	}
+      .checkbox-row label {
+        font-size: 0.9rem;
+        color: var(--ink);
+      }
 
-	footer.note {
-		margin-top: 28px;
-		font-size: 0.85rem;
-		color: var(--ink-soft);
-		line-height: 1.6;
-		max-width: 62ch;
-	}
+      footer.note {
+        margin-top: 28px;
+        font-size: 0.85rem;
+        color: var(--ink-soft);
+        line-height: 1.6;
+        max-width: 62ch;
+      }
 
-	footer.note code {
-		background: rgba(0, 0, 0, 0.05);
-		padding: 1px 5px;
-		border-radius: 3px;
-		font-size: 0.85em;
-	}
+      footer.note code {
+        background: rgba(0, 0, 0, 0.05);
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-size: 0.85em;
+      }
 
-	@media (prefers-reduced-motion: reduce) {
-		* { transition: none !important; }
-	}
-</style>
-</head>
-<body>
-<div class="wrap">
-	<header class="masthead">
-		<h1>Fretboard.js</h1>
-		<p>A dependency-free plugin that draws a guitar fretboard in SVG and labels every note on it. Change the tuning or fret count below, or highlight a scale to see it laid out across the neck.</p>
-	</header>
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="masthead">
+        <h1>Fretboard.js</h1>
+        <p>
+          A dependency-free plugin that draws a guitar fretboard in SVG and
+          labels every note on it. Change the tuning or fret count below, or
+          highlight a scale to see it laid out across the neck.
+        </p>
+      </header>
 
-	<div class="stage">
-		<div id="fretboard-container"></div>
-	</div>
+      <div class="stage">
+        <div id="fretboard-container"></div>
+      </div>
 
-	<div class="control-strip">
-		<div class="control">
-			<label for="tuning-select">Tuning</label>
-			<select id="tuning-select">
-				<option value="standard" selected>Standard (E A D G B E)</option>
-				<option value="drop-d">Drop D (D A D G B E)</option>
-				<option value="dadgad">DADGAD</option>
-				<option value="open-g">Open G (D G D G B D)</option>
-				<option value="half-step-down">Half-step down</option>
-			</select>
-		</div>
+      <div class="control-strip">
+        <div class="control">
+          <label for="tuning-select">Tuning</label>
+          <select id="tuning-select">
+            <option value="standard" selected>Standard (E A D G B E)</option>
+            <option value="drop-d">Drop D (D A D G B E)</option>
+            <option value="dadgad">DADGAD</option>
+            <option value="open-g">Open G (D G D G B D)</option>
+            <option value="half-step-down">Half-step down</option>
+          </select>
+        </div>
 
-		<div class="control">
-			<label for="frets-input">Frets</label>
-			<input id="frets-input" type="number" min="5" max="24" value="12" />
-		</div>
+        <div class="control">
+          <label for="frets-input">Frets</label>
+          <input id="frets-input" type="number" min="5" max="24" value="12" />
+        </div>
 
-		<div class="control">
-			<label for="taper-input">Fret taper</label>
-			<input id="taper-input" type="number" min="0" max="5" step="0.1" value="0" />
-		</div>
+        <div class="control">
+          <label for="taper-input">Fret taper</label>
+          <input
+            id="taper-input"
+            type="number"
+            min="0"
+            max="5"
+            step="0.1"
+            value="0"
+          />
+        </div>
 
-		<div class="divider"></div>
+        <div class="divider"></div>
 
-		<div class="control">
-			<label for="highlight-select">Highlight</label>
-			<select id="highlight-select">
-				<option value="none" selected>None — show every note</option>
-				<option value="c-major">C major scale</option>
-				<option value="a-minor-pent">A minor pentatonic</option>
-				<option value="e-blues">E blues scale</option>
-				<option value="g-major">G major scale</option>
-			</select>
-		</div>
+        <div class="control">
+          <label for="highlight-select">Highlight</label>
+          <select id="highlight-select">
+            <option value="none" selected>None — show every note</option>
+            <option value="c-major">C major scale</option>
+            <option value="a-minor-pent">A minor pentatonic</option>
+            <option value="e-blues">E blues scale</option>
+            <option value="g-major">G major scale</option>
+          </select>
+        </div>
 
-		<div class="checkbox-row">
-			<input type="checkbox" id="open-strings-toggle" checked />
-			<label for="open-strings-toggle">Show open strings</label>
-		</div>
-	</div>
+        <div class="checkbox-row">
+          <input type="checkbox" id="open-strings-toggle" checked />
+          <label for="open-strings-toggle">Show open strings</label>
+        </div>
+      </div>
 
-	<footer class="note">
-		Root notes of a highlighted scale are shown in brass; other scale tones share a warmer wood tone. "Fret taper" controls how much the frets narrow toward the body — 0 keeps them equally spaced, 1 matches a real guitar neck, and higher values exaggerate the effect further. Include <code>fretboard.js</code> and <code>fretboard.css</code> in your own page, then call <code>new Fretboard(container, options)</code> — see the source comments for the full option list.
-	</footer>
-</div>
+      <footer class="note">
+        Root notes of a highlighted scale are shown in brass; other scale tones
+        share a warmer wood tone. "Fret taper" controls how much the frets
+        narrow toward the body — 0 keeps them equally spaced, 1 matches a real
+        guitar neck, and higher values exaggerate the effect further. Include
+        <code>fretboard.js</code> and <code>fretboard.css</code> in your own
+        page, then call <code>new Fretboard(container, options)</code> — see the
+        source comments for the full option list.
+      </footer>
+    </div>
 
-<script src="fretboard.js"></script>
-<script>
-	var TUNINGS = {
-		'standard': ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'],
-		'drop-d': ['D2', 'A2', 'D3', 'G3', 'B3', 'E4'],
-		'dadgad': ['D2', 'A2', 'D3', 'G3', 'A3', 'D4'],
-		'open-g': ['D2', 'G2', 'D3', 'G3', 'B3', 'D4'],
-		'half-step-down': ['Eb2', 'Ab2', 'Db3', 'Gb3', 'Bb3', 'Eb4'],
-	};
+    <script src="fretboard.js"></script>
+    <script>
+      var TUNINGS = {
+        standard: ["E2", "A2", "D3", "G3", "B3", "E4"],
+        "drop-d": ["D2", "A2", "D3", "G3", "B3", "E4"],
+        dadgad: ["D2", "A2", "D3", "G3", "A3", "D4"],
+        "open-g": ["D2", "G2", "D3", "G3", "B3", "D4"],
+        "half-step-down": ["Eb2", "Ab2", "Db3", "Gb3", "Bb3", "Eb4"],
+      };
 
-	var HIGHLIGHTS = {
-		'none': null,
-		'c-major': { root: 'C', notes: ['C', 'D', 'E', 'F', 'G', 'A', 'B'] },
-		'a-minor-pent': { root: 'A', notes: ['A', 'C', 'D', 'E', 'G'] },
-		'e-blues': { root: 'E', notes: ['E', 'G', 'A', 'Bb', 'B', 'D'] },
-		'g-major': { root: 'G', notes: ['G', 'A', 'B', 'C', 'D', 'E', 'F#'] },
-	};
+      var HIGHLIGHTS = {
+        none: null,
+        "c-major": { root: "C", notes: ["C", "D", "E", "F", "G", "A", "B"] },
+        "a-minor-pent": { root: "A", notes: ["A", "C", "D", "E", "G"] },
+        "e-blues": { root: "E", notes: ["E", "G", "A", "Bb", "B", "D"] },
+        "g-major": { root: "G", notes: ["G", "A", "B", "C", "D", "E", "F#"] },
+      };
 
-	var container = document.getElementById('fretboard-container');
-	var fb = new Fretboard(container, {
-		frets: 12,
-		tuning: TUNINGS.standard,
-		showOpenStrings: true,
-		labelMode: 'note',
-		highlight: null,
-		fretTaper: 0,
-	});
+      var container = document.getElementById("fretboard-container");
+      var fb = new Fretboard(container, {
+        frets: 12,
+        tuning: TUNINGS.standard,
+        showOpenStrings: true,
+        labelMode: "note",
+        highlight: null,
+        fretTaper: 0,
+      });
 
-	document.getElementById('tuning-select').addEventListener('change', function (e) {
-		fb.setTuning(TUNINGS[e.target.value]);
-	});
+      document
+        .getElementById("tuning-select")
+        .addEventListener("change", function (e) {
+          fb.setTuning(TUNINGS[e.target.value]);
+        });
 
-	document.getElementById('taper-input').addEventListener('change', function (e) {
-		var value = Math.max(0, parseFloat(e.target.value));
-		if (isNaN(value)) value = 0;
-		e.target.value = value;
-		fb.setFretTaper(value);
-	});
+      document
+        .getElementById("taper-input")
+        .addEventListener("change", function (e) {
+          var value = Math.max(0, parseFloat(e.target.value));
+          if (isNaN(value)) value = 0;
+          e.target.value = value;
+          fb.setFretTaper(value);
+        });
 
-	document.getElementById('frets-input').addEventListener('change', function (e) {
-		var value = Math.max(5, Math.min(24, parseInt(e.target.value, 10) || 12));
-		e.target.value = value;
-		fb.setFrets(value);
-	});
+      document
+        .getElementById("frets-input")
+        .addEventListener("change", function (e) {
+          var value = Math.max(
+            5,
+            Math.min(24, parseInt(e.target.value, 10) || 12),
+          );
+          e.target.value = value;
+          fb.setFrets(value);
+        });
 
-	document.getElementById('highlight-select').addEventListener('change', function (e) {
-		fb.setHighlight(HIGHLIGHTS[e.target.value]);
-	});
+      document
+        .getElementById("highlight-select")
+        .addEventListener("change", function (e) {
+          fb.setHighlight(HIGHLIGHTS[e.target.value]);
+        });
 
-	document.getElementById('open-strings-toggle').addEventListener('change', function (e) {
-		fb.setOptions({ showOpenStrings: e.target.checked });
-	});
-</script>
-</body>
+      document
+        .getElementById("open-strings-toggle")
+        .addEventListener("change", function (e) {
+          fb.setOptions({ showOpenStrings: e.target.checked });
+        });
+    </script>
+  </body>
 </html>
