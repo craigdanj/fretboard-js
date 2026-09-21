@@ -1,7 +1,5 @@
 # Fretboard.js
 
-![ChordShape demo](https://img.shields.io/badge/dependencies-none-brightgreen) ![ChordShape demo](https://img.shields.io/badge/JavaScript-vanilla-yellow)
-
 A dependency-free, plain-JavaScript plugin that renders a guitar fretboard as SVG and labels every note on it. No build step, no framework — drop in two files and call one constructor.
 
 ## Features
@@ -10,6 +8,7 @@ A dependency-free, plain-JavaScript plugin that renders a guitar fretboard as SV
 - Labels every fret with its actual note name, computed from the tuning you pass in (not hardcoded per-string offsets), so any tuning works correctly, including the guitar's one irregular interval between the G and B strings.
 - Optional scale/chord highlighting: pass a set of notes and a root, and only those notes are shown, with the root visually distinguished.
 - Configurable fret-spacing taper (see below) to draw either perfectly even frets or a real-guitar-style narrowing taper, at any strength.
+- Left-handed mode: mirror the whole board horizontally, nut on the right.
 - Sharp or flat spelling for accidentals (`preferFlats`).
 - Theming via CSS custom properties — no need to touch the SVG-generation code to reskin it.
 - Zero dependencies. No build tooling required to use it.
@@ -35,7 +34,7 @@ Then construct a fretboard against any container element:
 </script>
 ```
 
-Open `index.html` in this folder for a live, interactive demo with tuning, fret count, and highlight controls.
+Open `index.html` in this folder for a live, interactive demo with tuning, fret count, taper, left-handed, note-label, and highlight controls.
 
 ### Module usage
 
@@ -53,6 +52,7 @@ Otherwise it attaches itself to `window.Fretboard` when loaded as a plain `<scri
 new Fretboard(container, {
   frets: 12,
   tuning: ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'], // low to high, 6th string to 1st
+  leftHanded: false,       // true mirrors the board — see "Left-handed mode" below
   showOpenStrings: true,
   labelMode: 'note',       // 'note' | 'none'
   preferFlats: false,
@@ -69,7 +69,8 @@ new Fretboard(container, {
 |---|---|---|
 | `frets` | `12` | Number of frets to draw. |
 | `tuning` | standard EADGBE | Array of note names, **low string to high string** (index 0 = lowest pitch). Accepts sharps or flats, e.g. `'F#3'`, `'Bb2'`. |
-| `showOpenStrings` | `true` | Draws a small zone to the left of the nut with each string's open-note label. |
+| `leftHanded` | `false` | Mirrors the whole board horizontally — nut on the right, fret 1 next to it, frets increasing toward the left. See "Left-handed mode" below. |
+| `showOpenStrings` | `true` | Draws a small zone to the left of the nut with each string's open-note label. In `leftHanded` mode, this zone (and its notes) correctly relocates to the right of the nut instead. |
 | `labelMode` | `'note'` | `'note'` labels each fret with its note name; `'none'` draws the board with no note labels at all. |
 | `preferFlats` | `false` | When `true`, accidentals are spelled with flats (`Bb`) instead of sharps (`A#`). |
 | `highlight` | `null` | `{ notes: [...], root: 'C' }` — when set, only matching notes are drawn, and the root is styled distinctly. Note-name matching is by pitch class, so `'C#'` and `'Db'` are treated as the same note. |
@@ -79,7 +80,19 @@ new Fretboard(container, {
 | `nutWidth` | `14` | Width (px) of the nut. |
 | `padding` | `28` | Padding (px) around the whole diagram. |
 
-> **A note on `leftHanded`:** earlier drafts of this plugin accepted a `leftHanded` option, but it currently has no effect on rendering — it's stored but never read when drawing. Treat it as not yet implemented rather than a working feature.
+### Left-handed mode
+
+Setting `leftHanded: true` mirrors the entire board horizontally: the nut moves to the right edge, fret 1 sits immediately to its left, and fret numbers increase moving leftward — matching how a left-handed player holds the instrument. This is a pure coordinate transform:
+
+- Note names, tuning, highlighting, and fret-spacing taper are computed exactly as normal and are completely unaffected — only where things are drawn changes, never what note is at what fret.
+- It composes correctly with `fretTaper`: with a non-zero taper, frets still narrow moving away from the nut — it's just that the nut (and therefore the narrow end) is now on the right instead of the left.
+- Fret markers, note labels, and fret-number labels stay exactly aligned to the actual fret-wire positions in either mode, since both read from the same internal position calculation.
+- Text (note names, fret numbers) is repositioned, not flipped — labels always read normally, never backwards.
+- The open-string gutter (see `showOpenStrings`) correctly relocates to the opposite side, and the SVG's own bounds automatically size themselves to contain it there with the same margin it has in the default orientation — nothing clips.
+
+```js
+fb.setLeftHanded(true);
+```
 
 ### Fret spacing / taper
 
@@ -106,6 +119,7 @@ fb.setFretTaper(0);   // back to equidistant
 | `setTuning(tuning)` | Change the tuning (array, low to high) and re-render. |
 | `setHighlight(highlight)` | Update the highlighted note set (or pass `null` to clear it) and re-render. |
 | `setLabelMode(mode)` | Switch between `'note'` and `'none'` and re-render. |
+| `setLeftHanded(leftHanded)` | Toggle left-handed (mirrored) mode and re-render. |
 | `setFretTaper(taper)` | Change the fret-spacing taper and re-render. Throws if `taper` isn't a number `≥ 0`. Note: this validation only applies when calling the setter — the constructor does not validate `fretTaper` (see "Fret spacing / taper" above). |
 | `setOptions(partialOptions)` | Merge any subset of constructor options and re-render in one call. |
 | `getSVG()` | Returns the underlying `<svg>` element, e.g. for exporting or further manipulation. |
@@ -143,7 +157,6 @@ Override any subset of these in your own stylesheet, scoped to your container, t
 
 ## Known limitations
 
-- **`leftHanded` has no effect.** It's accepted as an option but isn't wired into rendering yet.
 - **`labelMode: 'degree'`** (scale-degree labels, e.g. "1, 3, 5" instead of note names) is not implemented — only `'note'` and `'none'` currently produce distinct output.
 - **`fretTaper` is only validated via `setFretTaper()`, not the constructor.** Passing a negative `fretTaper` in the constructor options doesn't throw — it silently produces incorrect, non-monotonic fret spacing. Always pass `fretTaper >= 0` at construction time.
 - No package-manager distribution (npm, etc.) — this is plain files meant to be copied into a project.

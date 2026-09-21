@@ -13,9 +13,9 @@
 	--fb-note-bg: #4a2f1e;
 	--fb-note-border: #7a5636;
 	--fb-note-text: #f5e6c8;
-	--fb-highlight-bg: #8b5e3c;
-	--fb-highlight-border: #c9a66b;
-	--fb-root-bg: #c9a66b;
+	--fb-highlight-bg: #6947c0;
+	--fb-highlight-border: #6bb7c9bd;
+	--fb-root-bg: #6bc99e;
 	--fb-root-text: #2b1b12;
 	--fb-open-divider: rgba(245, 230, 200, 0.25);
 
@@ -80,9 +80,10 @@
 .fretboard-note-label {
 	fill: var(--fb-note-text);
 	font-size: 11px;
-	font-weight: 600;
+	font-weight: 500;
 	pointer-events: none;
 	user-select: none;
+	font-family: "Helvetica Neue", "Segoe UI", sans-serif
 }
 
 .fretboard-note-label--root {
