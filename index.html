@@ -371,7 +371,7 @@
 
         <div class="control">
           <label for="frets-input">Frets</label>
-          <input id="frets-input" type="number" min="5" max="24" value="12" />
+          <input id="frets-input" type="number" min="5" max="24" value="13" />
         </div>
 
         <div class="control">
@@ -399,8 +399,8 @@
         <div class="control">
           <label for="highlight-select">Highlight</label>
           <select id="highlight-select">
-            <option value="none" selected>None — show every note</option>
-            <option value="c-major">C major scale</option>
+            <option value="none">None — show every note</option>
+            <option value="c-major" selected>C major scale</option>
             <option value="a-minor-pent">A minor pentatonic</option>
             <option value="e-blues">E blues scale</option>
             <option value="g-major">G major scale</option>
@@ -450,11 +450,11 @@
 
       var container = document.getElementById("fretboard-container");
       var fb = new Fretboard(container, {
-        frets: 12,
+        frets: 13,
         tuning: TUNINGS.standard,
         showOpenStrings: true,
         labelMode: "note",
-        highlight: null,
+        highlight: HIGHLIGHTS["c-major"],
         fretTaper: 1,
         leftHanded: false,
       });
