@@ -392,6 +392,7 @@
           <label for="label-mode-select">Note labels</label>
           <select id="label-mode-select">
             <option value="note" selected>Note names</option>
+            <option value="degree">Scale degrees</option>
             <option value="none">Hidden</option>
           </select>
         </div>
@@ -399,8 +400,8 @@
         <div class="control">
           <label for="highlight-select">Highlight</label>
           <select id="highlight-select">
-            <option value="none" selected>None — show every note</option>
-            <option value="c-major">C major scale</option>
+            <option value="none">None — show every note</option>
+            <option value="c-major" selected>C major scale</option>
             <option value="a-minor-pent">A minor pentatonic</option>
             <option value="e-blues">E blues scale</option>
             <option value="g-major">G major scale</option>
@@ -421,7 +422,10 @@
 
       <footer class="note">
         Root notes of a highlighted scale are shown in brass; other scale tones
-        share a warmer wood tone. "Fret taper" controls how much the frets
+        share a warmer wood tone. "Scale degrees" labels each note relative to
+        the highlighted root (1, b3, 5, and so on) instead of its note name —
+        pick a highlight above for this to have something to measure from.
+        "Fret taper" controls how much the frets
         narrow toward the body — 0 keeps them equally spaced, 1 matches a real
         guitar neck, and higher values exaggerate the effect further. Include
         <code>fretboard.js</code> and <code>fretboard.css</code> in your own
@@ -454,7 +458,7 @@
         tuning: TUNINGS.standard,
         showOpenStrings: true,
         labelMode: "note",
-        highlight: null,
+        highlight: HIGHLIGHTS["c-major"],
         fretTaper: 1,
         leftHanded: false,
       });

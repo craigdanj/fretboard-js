@@ -7,6 +7,7 @@ A dependency-free, plain-JavaScript plugin that renders a guitar fretboard as SV
 - Renders the full fretboard — nut, frets, strings, and standard dot inlays — as a single inline SVG.
 - Labels every fret with its actual note name, computed from the tuning you pass in (not hardcoded per-string offsets), so any tuning works correctly, including the guitar's one irregular interval between the G and B strings.
 - Optional scale/chord highlighting: pass a set of notes and a root, and only those notes are shown, with the root visually distinguished.
+- Scale-degree labels (`1`, `b3`, `5`, ...) relative to a highlighted root, as an alternative to note names.
 - Configurable fret-spacing taper (see below) to draw either perfectly even frets or a real-guitar-style narrowing taper, at any strength.
 - Left-handed mode: mirror the whole board horizontally, nut on the right.
 - Sharp or flat spelling for accidentals (`preferFlats`).
@@ -54,7 +55,7 @@ new Fretboard(container, {
   tuning: ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'], // low to high, 6th string to 1st
   leftHanded: false,       // true mirrors the board — see "Left-handed mode" below
   showOpenStrings: true,
-  labelMode: 'note',       // 'note' | 'none'
+  labelMode: 'note',       // 'note' | 'degree' | 'none'
   preferFlats: false,
   highlight: null,         // e.g. { notes: ['C', 'E', 'G'], root: 'C' }
   fretTaper: 0,            // see "Fret spacing / taper" below
@@ -71,7 +72,7 @@ new Fretboard(container, {
 | `tuning` | standard EADGBE | Array of note names, **low string to high string** (index 0 = lowest pitch). Accepts sharps or flats, e.g. `'F#3'`, `'Bb2'`. |
 | `leftHanded` | `false` | Mirrors the whole board horizontally — nut on the right, fret 1 next to it, frets increasing toward the left. See "Left-handed mode" below. |
 | `showOpenStrings` | `true` | Draws a small zone to the left of the nut with each string's open-note label. In `leftHanded` mode, this zone (and its notes) correctly relocates to the right of the nut instead. |
-| `labelMode` | `'note'` | `'note'` labels each fret with its note name; `'none'` draws the board with no note labels at all. |
+| `labelMode` | `'note'` | `'note'` labels each fret with its note name; `'degree'` labels it with its scale degree relative to `highlight.root` (see "Scale-degree labels" below); `'none'` draws the board with no note labels at all. |
 | `preferFlats` | `false` | When `true`, accidentals are spelled with flats (`Bb`) instead of sharps (`A#`). |
 | `highlight` | `null` | `{ notes: [...], root: 'C' }` — when set, only matching notes are drawn, and the root is styled distinctly. Note-name matching is by pitch class, so `'C#'` and `'Db'` are treated as the same note. |
 | `fretTaper` | `0` | Controls fret-spacing taper. See below. |
@@ -92,6 +93,20 @@ Setting `leftHanded: true` mirrors the entire board horizontally: the nut moves 
 
 ```js
 fb.setLeftHanded(true);
+```
+
+### Scale-degree labels
+
+Setting `labelMode: 'degree'` labels each note with its scale degree (`1`, `b3`, `5`, and so on) relative to a root, instead of its note name:
+
+- The root is taken from `highlight.root` — degree is inherently relative, so there's no meaningful "1" without a reference point to measure from.
+- Degrees use the conventional scale-degree naming: `1, b2, 2, b3, 3, 4, b5, 5, b6, 6, b7, 7` for the twelve semitones above the root. Verified against real scale shapes — a C major highlight produces exactly `1` through `7` with no accidentals, and A minor pentatonic produces the well-known `1, b3, 4, 5, b7`.
+- Root notes are still styled distinctly (see `--fb-root-bg` / `--fb-root-text` in Theming) and are always labeled `1`.
+- **If there's no root to measure from** — `highlight` is `null`, or set but missing a `root` — degree mode falls back to plain note names rather than guessing a root or leaving labels blank.
+
+```js
+fb.setHighlight({ root: 'A', notes: ['A', 'C', 'D', 'E', 'G'] }); // A minor pentatonic
+fb.setLabelMode('degree'); // labels become 1, b3, 4, 5, b7
 ```
 
 ### Fret spacing / taper
@@ -118,7 +133,7 @@ fb.setFretTaper(0);   // back to equidistant
 | `setFrets(frets)` | Change the number of frets and re-render. |
 | `setTuning(tuning)` | Change the tuning (array, low to high) and re-render. |
 | `setHighlight(highlight)` | Update the highlighted note set (or pass `null` to clear it) and re-render. |
-| `setLabelMode(mode)` | Switch between `'note'` and `'none'` and re-render. |
+| `setLabelMode(mode)` | Switch between `'note'`, `'degree'`, and `'none'` and re-render. |
 | `setLeftHanded(leftHanded)` | Toggle left-handed (mirrored) mode and re-render. |
 | `setFretTaper(taper)` | Change the fret-spacing taper and re-render. Throws if `taper` isn't a number `≥ 0`. Note: this validation only applies when calling the setter — the constructor does not validate `fretTaper` (see "Fret spacing / taper" above). |
 | `setOptions(partialOptions)` | Merge any subset of constructor options and re-render in one call. |
@@ -157,7 +172,6 @@ Override any subset of these in your own stylesheet, scoped to your container, t
 
 ## Known limitations
 
-- **`labelMode: 'degree'`** (scale-degree labels, e.g. "1, 3, 5" instead of note names) is not implemented — only `'note'` and `'none'` currently produce distinct output.
 - **`fretTaper` is only validated via `setFretTaper()`, not the constructor.** Passing a negative `fretTaper` in the constructor options doesn't throw — it silently produces incorrect, non-monotonic fret spacing. Always pass `fretTaper >= 0` at construction time.
 - No package-manager distribution (npm, etc.) — this is plain files meant to be copied into a project.
 
