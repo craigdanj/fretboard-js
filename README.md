@@ -6,6 +6,7 @@ A dependency-free, plain-JavaScript plugin that renders a guitar fretboard as SV
 
 - Renders the full fretboard — nut, frets, strings, and standard dot inlays — as a single inline SVG.
 - Labels every fret with its actual note name, computed from the tuning you pass in (not hardcoded per-string offsets), so any tuning works correctly, including the guitar's one irregular interval between the G and B strings.
+- Any number of strings — the string count is always `tuning.length`, so ukulele, 4-string bass, and 8-string guitar all work the same way as standard 6-string guitar. See "Any number of strings" below.
 - Optional scale/chord highlighting: pass a set of notes and a root, and only those notes are shown, with the root visually distinguished.
 - Scale-degree labels (`1`, `b3`, `5`, ...) relative to a highlighted root, as an alternative to note names.
 - Configurable fret-spacing taper (see below) to draw either perfectly even frets or a real-guitar-style narrowing taper, at any strength.
@@ -52,7 +53,7 @@ Otherwise it attaches itself to `window.Fretboard` when loaded as a plain `<scri
 ```js
 new Fretboard(container, {
   frets: 12,
-  tuning: ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'], // low to high, 6th string to 1st
+  tuning: ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'], // low to high; any string count works — see "Any number of strings" below
   leftHanded: false,       // true mirrors the board — see "Left-handed mode" below
   showOpenStrings: true,
   labelMode: 'note',       // 'note' | 'degree' | 'none'
@@ -69,7 +70,7 @@ new Fretboard(container, {
 | Option | Default | Description |
 |---|---|---|
 | `frets` | `12` | Number of frets to draw. |
-| `tuning` | standard EADGBE | Array of note names, **low string to high string** (index 0 = lowest pitch). Accepts sharps or flats, e.g. `'F#3'`, `'Bb2'`. |
+| `tuning` | standard EADGBE | Array of note names, **low string to high string** (index 0 = lowest pitch). The number of strings drawn is always `tuning.length` — pass an array of any length. Accepts sharps or flats, e.g. `'F#3'`, `'Bb2'`. Must be a non-empty array; an empty array throws. |
 | `leftHanded` | `false` | Mirrors the whole board horizontally — nut on the right, fret 1 next to it, frets increasing toward the left. See "Left-handed mode" below. |
 | `showOpenStrings` | `true` | Draws a small zone to the left of the nut with each string's open-note label. In `leftHanded` mode, this zone (and its notes) correctly relocates to the right of the nut instead. |
 | `labelMode` | `'note'` | `'note'` labels each fret with its note name; `'degree'` labels it with its scale degree relative to `highlight.root` (see "Scale-degree labels" below); `'none'` draws the board with no note labels at all. |
@@ -80,6 +81,36 @@ new Fretboard(container, {
 | `stringSpacing` | `34` | Vertical distance (px) between adjacent strings. |
 | `nutWidth` | `14` | Width (px) of the nut. |
 | `padding` | `28` | Padding (px) around the whole diagram. |
+
+### Any number of strings
+
+The number of strings drawn is always `tuning.length` — there's no separate "string count" option, so it can never disagree with the tuning you actually pass in. This means any plucked-string instrument works, not just 6-string guitar:
+
+```js
+// Ukulele — note this is given in true PITCH order (low to high), not the
+// conventional "G C E A" playing order. Standard ukulele tuning is
+// reentrant: the G string is tuned up an octave, so it isn't actually the
+// lowest-pitched string, even though it's written first. Since tuning[0] is
+// always drawn as the lowest, thickest string, using playing order here
+// would visually misrepresent the instrument.
+new Fretboard(container, { tuning: ['C4', 'E4', 'G4', 'A4'] });
+
+// 4-string bass — one octave below a guitar's low four strings.
+new Fretboard(container, { tuning: ['E1', 'A1', 'D2', 'G2'] });
+
+// 8-string guitar — standard tuning extends 6-string EADGBE down by two
+// more perfect fourths (verified against multiple independent sources).
+new Fretboard(container, { tuning: ['F#1', 'B1', 'E2', 'A2', 'D3', 'G3', 'B3', 'E4'] });
+```
+
+A few things worth knowing:
+
+- **`tuning` must be a non-empty array.** An empty array throws a clear error, both from the constructor and from `setTuning()` — there's no silent fallback, since a zero-length tuning would otherwise produce a negative, broken board height.
+- **A single-string tuning is allowed.** It produces a flat, minimal diagram (zero board height) rather than being rejected — unusual, but not an error.
+- Everything else — note computation, highlighting, fret taper, left-handed mirroring — is completely independent of string count and works the same way regardless of how many strings are drawn.
+- The board's height and each string's relative thickness scale automatically with the string count; there's nothing to configure separately.
+
+The demo page's tuning dropdown includes ukulele, bass, and 8-string presets under "Other instruments."
 
 ### Left-handed mode
 
@@ -131,7 +162,7 @@ fb.setFretTaper(0);   // back to equidistant
 | Method | Description |
 |---|---|
 | `setFrets(frets)` | Change the number of frets and re-render. |
-| `setTuning(tuning)` | Change the tuning (array, low to high) and re-render. |
+| `setTuning(tuning)` | Change the tuning (array, low to high) and re-render. The new array can be a different length than the current one — string count always follows `tuning.length`. Throws if `tuning` isn't a non-empty array. |
 | `setHighlight(highlight)` | Update the highlighted note set (or pass `null` to clear it) and re-render. |
 | `setLabelMode(mode)` | Switch between `'note'`, `'degree'`, and `'none'` and re-render. |
 | `setLeftHanded(leftHanded)` | Toggle left-handed (mirrored) mode and re-render. |
