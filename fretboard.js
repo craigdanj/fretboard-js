@@ -133,10 +133,26 @@
 		this._build();
 	}
 
+	// A tuning array defines both the pitches AND the number of strings
+	// drawn (numStrings is always tuning.length — see _dims). An empty
+	// array would otherwise slip through silently: `opts.tuning ||
+	// DEFAULT_TUNING.slice()` does not catch it, since `[]` is truthy in
+	// JS, and a zero-length tuning produces a negative boardHeight
+	// downstream rather than a clean error. A single-string tuning is
+	// allowed — it produces a flat, minimal diagram, which is a legitimate
+	// (if unusual) thing to visualize, not an error condition.
+	function validateTuning(tuning) {
+		if (!Array.isArray(tuning) || tuning.length === 0) {
+			throw new Error('Fretboard: tuning must be a non-empty array of note names, got ' + JSON.stringify(tuning));
+		}
+	}
+
 	Fretboard.prototype._mergeOptions = function (opts) {
+		var tuning = opts.tuning || DEFAULT_TUNING.slice();
+		validateTuning(tuning);
 		return {
 			frets: opts.frets || 12,
-			tuning: opts.tuning || DEFAULT_TUNING.slice(),
+			tuning: tuning,
 			leftHanded: !!opts.leftHanded,
 			showOpenStrings: opts.showOpenStrings !== false,
 			labelMode: opts.labelMode || 'note', // 'note' | 'degree' | 'none'
@@ -320,11 +336,27 @@
 
 	Fretboard.prototype._stringY = function (boardY, stringIndex) {
 		// tuning[] is ordered low to high (index 0 = lowest-pitched string).
-		// On a real fretboard viewed as a player looks down at it, the lowest
-		// string sits nearest the player (bottom of the diagram) and the
-		// highest string sits farthest (top) — so we draw index 0 at the
-		// bottom and invert upward from there.
+		//
+		// Right-handed: on a real fretboard viewed as a player looks down at
+		// it, the lowest string sits nearest the player (bottom of the
+		// diagram) and the highest string sits farthest (top) — matching
+		// standard tab notation (high e on the top line, low E on the
+		// bottom). Index 0 gets the largest y (bottom), inverting upward
+		// from there.
+		//
+		// Left-handed: the vertical string order is ALSO reversed, not just
+		// the horizontal (nut/fret) layout — low E at the top, high e at the
+		// bottom, with everything in between in mirrored order (e.g. B sits
+		// second from the bottom in standard tuning, immediately above the
+		// high e). This is a deliberate, explicit convention (confirmed
+		// against a worked example: E-A-D-G-B-E top-to-bottom under
+		// leftHanded, vs. the reverse for right-handed), not an accidental
+		// side effect of the horizontal mirroring elsewhere in this file —
+		// index 0 gets the smallest y (top) here, increasing downward.
 		var numStrings = this.options.tuning.length;
+		if (this.options.leftHanded) {
+			return boardY + stringIndex * this.options.stringSpacing;
+		}
 		return boardY + (numStrings - 1 - stringIndex) * this.options.stringSpacing;
 	};
 
@@ -515,6 +547,7 @@
 	};
 
 	Fretboard.prototype.setTuning = function (tuning) {
+		validateTuning(tuning);
 		this.options.tuning = tuning.slice();
 		this._render();
 	};

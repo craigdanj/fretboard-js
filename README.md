@@ -10,7 +10,7 @@ A dependency-free, plain-JavaScript plugin that renders a guitar fretboard as SV
 - Optional scale/chord highlighting: pass a set of notes and a root, and only those notes are shown, with the root visually distinguished.
 - Scale-degree labels (`1`, `b3`, `5`, ...) relative to a highlighted root, as an alternative to note names.
 - Configurable fret-spacing taper (see below) to draw either perfectly even frets or a real-guitar-style narrowing taper, at any strength.
-- Left-handed mode: mirror the whole board horizontally, nut on the right.
+- Left-handed mode: mirror the whole board both horizontally (nut on the right) and vertically (string order reversed, low string on top).
 - Sharp or flat spelling for accidentals (`preferFlats`).
 - Theming via CSS custom properties — no need to touch the SVG-generation code to reskin it.
 - Zero dependencies. No build tooling required to use it.
@@ -114,13 +114,20 @@ The demo page's tuning dropdown includes ukulele, bass, and 8-string presets und
 
 ### Left-handed mode
 
-Setting `leftHanded: true` mirrors the entire board horizontally: the nut moves to the right edge, fret 1 sits immediately to its left, and fret numbers increase moving leftward — matching how a left-handed player holds the instrument. This is a pure coordinate transform:
+Setting `leftHanded: true` mirrors the entire board for a left-handed player, both horizontally and vertically:
 
-- Note names, tuning, highlighting, and fret-spacing taper are computed exactly as normal and are completely unaffected — only where things are drawn changes, never what note is at what fret.
-- It composes correctly with `fretTaper`: with a non-zero taper, frets still narrow moving away from the nut — it's just that the nut (and therefore the narrow end) is now on the right instead of the left.
+- **Horizontally:** the nut moves to the right edge, fret 1 sits immediately to its left, and fret numbers increase moving leftward.
+- **Vertically:** the string order is fully reversed too — the lowest-pitched string is drawn at the top instead of the bottom, and the highest-pitched string at the bottom instead of the top. For standard guitar tuning (E2 A2 D3 G3 B3 E4, low to high), the default top-to-bottom order is E4-B3-G3-D3-A2-E2; under `leftHanded` it's the exact reverse, E2-A2-D3-G3-B3-E4 — so the B string sits second from the very bottom, immediately above the high E4.
+
+This is still computed as a coordinate transform, not a re-derivation:
+
+- Note names, tuning, highlighting, and fret-spacing taper are computed exactly as normal and are completely unaffected — only where things are drawn changes, never what note is at what fret. In particular, the note at any given tuning index and fret is identical between `leftHanded: true` and `leftHanded: false`; only its drawn position moves.
+- String thickness still correctly tracks pitch (the lowest string is always thickest), regardless of whether that string ends up drawn at the top or the bottom.
+- It composes correctly with `fretTaper`: with a non-zero taper, frets still narrow moving away from the nut — it's just that the nut (and therefore the narrow end) is now on the right instead of the left. The vertical string reversal and the horizontal taper are independent of each other.
 - Fret markers, note labels, and fret-number labels stay exactly aligned to the actual fret-wire positions in either mode, since both read from the same internal position calculation.
 - Text (note names, fret numbers) is repositioned, not flipped — labels always read normally, never backwards.
 - The open-string gutter (see `showOpenStrings`) correctly relocates to the opposite side, and the SVG's own bounds automatically size themselves to contain it there with the same margin it has in the default orientation — nothing clips.
+- The vertical reversal applies at any string count — it isn't specific to 6-string guitar (see "Any number of strings" above).
 
 ```js
 fb.setLeftHanded(true);
