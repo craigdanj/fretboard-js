@@ -230,8 +230,8 @@
 		var boardGroup = svgEl('g', { class: 'fretboard-board' });
 		this.svg.appendChild(boardGroup);
 
-		// Fretboard body background.
-		var woodWidth = d.boardWidth - o.nutWidth;
+		// Cover the full board through the last fret; the nut is drawn on top.
+		var woodWidth = d.boardWidth;
 		var woodX = this._mirrorRectX(boardX, d.boardWidth, boardX, woodWidth);
 		boardGroup.appendChild(this._rect(woodX, boardY, woodWidth, d.boardHeight, 'fretboard-wood', 3));
 
