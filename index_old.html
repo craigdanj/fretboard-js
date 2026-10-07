@@ -359,6 +359,13 @@
 
       <div class="control-strip">
         <div class="control">
+          <label for="render-mode-select">Render mode</label>
+          <select id="render-mode-select">
+            <option value="realistic">Realistic</option>
+            <option value="diagram" selected>Diagram</option>
+          </select>
+        </div>
+        <div class="control">
           <label for="tuning-select">Tuning</label>
           <select id="tuning-select">
             <optgroup label="6-string guitar">
@@ -428,8 +435,8 @@
       </div>
 
       <footer class="note">
-        Root notes of a highlighted scale are shown in brass; other scale tones
-        share a warmer wood tone. "Scale degrees" labels each note relative to
+        Switch between the textured Realistic view and the original flat Diagram
+        view. Root notes of a highlighted scale use a distinct color. "Scale degrees" labels each note relative to
         the highlighted root (1, b3, 5, and so on) instead of its note name —
         pick a highlight above for this to have something to measure from.
         "Fret taper" controls how much the frets
@@ -475,6 +482,7 @@
 
       var container = document.getElementById("fretboard-container");
       var fb = new Fretboard(container, {
+        renderMode: "diagram",
         frets: 13,
         tuning: TUNINGS.standard,
         showOpenStrings: true,
@@ -483,6 +491,12 @@
         fretTaper: 1,
         leftHanded: false,
       });
+
+      document
+        .getElementById("render-mode-select")
+        .addEventListener("change", function (e) {
+          fb.setRenderMode(e.target.value);
+        });
 
       document
         .getElementById("tuning-select")

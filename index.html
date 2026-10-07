@@ -286,13 +286,13 @@
       .preview-scroll {
         overflow-x: auto;
         padding: 34px 24px 26px;
-        background: #111315;
+        background: radial-gradient(ellipse at 50% 45%, #25221d 0%, #151719 70%);
       }
       #fretboard-container {
         min-width: 680px;
       }
       .fretboard-svg {
-        filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.28));
+        filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.22));
       }
       .preview-foot {
         min-height: 46px;
@@ -760,7 +760,7 @@
           </p>
         </div>
         <div class="stat">
-          <b>11</b> API OPTIONS&nbsp;&nbsp;·&nbsp;&nbsp;<b>∞</b> TUNINGS
+          <b>13</b> API OPTIONS&nbsp;&nbsp;·&nbsp;&nbsp;<b>∞</b> TUNINGS
         </div>
       </section>
       <main class="workspace">
@@ -835,6 +835,19 @@
             <p>Changes render instantly.</p>
           </div>
           <div class="controls">
+            <details open>
+              <summary>Appearance</summary>
+              <div class="section-body">
+                <div class="field">
+                  <label for="render-mode">Render mode</label>
+                  <select id="render-mode" aria-describedby="render-mode-hint">
+                    <option value="realistic" selected>Realistic</option>
+                    <option value="diagram">Diagram</option>
+                  </select>
+                  <span class="hint" id="render-mode-hint">Textured wood and metallic strings, or the original flat diagram.</span>
+                </div>
+              </div>
+            </details>
             <details open>
               <summary>Instrument</summary>
               <div class="section-body">
@@ -1109,33 +1122,33 @@
                     <input
                       id="color-wood"
                       type="color"
-                      value="#2b1b12" /></label
+                      value="#33251f" /></label
                   ><label class="color-field" for="color-wire"
                     >Frets
                     <input
                       id="color-wire"
                       type="color"
-                      value="#c9a66b" /></label
+                      value="#b6aaa0" /></label
                   ><label class="color-field" for="color-note"
                     >Notes
                     <input
                       id="color-note"
                       type="color"
-                      value="#4a2f1e" /></label
+                      value="#40332c" /></label
                   ><label class="color-field" for="color-highlight"
                     >Scale
                     <input
                       id="color-highlight"
                       type="color"
-                      value="#6947c0" /></label
+                      value="#315d4c" /></label
                   ><label class="color-field" for="color-root"
                     >Root
                     <input
                       id="color-root"
                       type="color"
-                      value="#6bc99e" /></label
+                      value="#edc27c" /></label
                   ><label class="color-field" for="color-text"
-                    >Text <input id="color-text" type="color" value="#f5e6c8"
+                    >Text <input id="color-text" type="color" value="#fff7e8"
                   /></label>
                 </div>
               </div>
@@ -1190,31 +1203,38 @@
         };
         var THEMES = {
           rosewood: {
-            wood: "#2b1b12",
-            wire: "#c9a66b",
-            note: "#4a2f1e",
-            highlight: "#6947c0",
-            root: "#6bc99e",
-            text: "#f5e6c8",
+            wood: "#33251f",
+            wire: "#b6aaa0",
+            note: "#40332c",
+            highlight: "#315d4c",
+            root: "#edc27c",
+            text: "#fff7e8",
           },
           midnight: {
             wood: "#151b27",
             wire: "#8291a8",
             note: "#263248",
-            highlight: "#3f74c7",
-            root: "#ffbd59",
+            highlight: "#334f7d",
+            root: "#9ad5d5",
             text: "#f3f6fb",
           },
           maple: {
-            wood: "#b78246",
-            wire: "#e9dcc0",
+            wood: "#b88952",
+            wire: "#d6d2c9",
             note: "#3a2517",
-            highlight: "#2d6a8b",
-            root: "#f5d76e",
+            highlight: "#355e69",
+            root: "#ffe0a1",
             text: "#fff8ec",
           },
         };
+        var DIAGRAM_THEMES = {
+          rosewood: { wood: "#2b1b12", wire: "#c9a66b", note: "#4a2f1e", highlight: "#6947c0", root: "#6bc99e", text: "#f5e6c8" },
+          midnight: { wood: "#151b27", wire: "#8291a8", note: "#263248", highlight: "#3f74c7", root: "#ffbd59", text: "#f3f6fb" },
+          maple: { wood: "#b78246", wire: "#e9dcc0", note: "#3a2517", highlight: "#2d6a8b", root: "#f5d76e", text: "#fff8ec" }
+        };
         var defaults = {
+          renderMode: "realistic",
+          themeKey: "rosewood",
           frets: 15,
           tuningKey: "standard",
           tuning: TUNINGS.standard.notes.slice(),
@@ -1264,6 +1284,7 @@
         }
         function optionObject() {
           return {
+            renderMode: state.renderMode,
             frets: state.frets,
             tuning: state.tuning.slice(),
             leftHanded: state.leftHanded,
@@ -1320,6 +1341,8 @@
             " strings · " +
             state.frets +
             " frets";
+          // Preserve readable note sizes; narrower screens can scroll the board.
+          $("fretboard-container").style.minWidth = Math.max(680, Math.round(Number(box[2]) * 0.85)) + "px";
           $("dimensions").textContent =
             Math.round(Number(box[2])) +
             " × " +
@@ -1364,6 +1387,7 @@
           $(o).textContent = v + (s || "");
         }
         function syncControls() {
+          $("render-mode").value = state.renderMode;
           $("tuning-preset").value = state.tuningKey;
           $("custom-tuning").value = state.tuning.join(", ");
           setPaired(
@@ -1465,6 +1489,11 @@
           render();
         }
         function bindEvents() {
+          $("render-mode").addEventListener("change", function () {
+            state.renderMode = this.value;
+            if (state.themeKey !== "custom") setTheme(state.themeKey);
+            render();
+          });
           document.querySelectorAll(".preset").forEach(function (b) {
             b.addEventListener("click", function () {
               setTuning(b.dataset.preset);
@@ -1552,19 +1581,24 @@
           });
           document.querySelectorAll(".theme-button").forEach(function (b) {
             b.addEventListener("click", function () {
-              setTheme(THEMES[b.dataset.theme]);
+              setTheme(b.dataset.theme);
             });
           });
           ["wood", "wire", "note", "highlight", "root", "text"].forEach(
             function (k) {
-              $("color-" + k).addEventListener("input", applyThemeFromInputs);
+              $("color-" + k).addEventListener("input", function () {
+                state.themeKey = "custom";
+                applyThemeFromInputs();
+              });
             },
           );
           $("reset-button").addEventListener("click", reset);
           $("copy-button").addEventListener("click", copyCode);
           $("download-button").addEventListener("click", downloadSVG);
         }
-        function setTheme(t) {
+        function setTheme(key) {
+          state.themeKey = key;
+          var t = (state.renderMode === "diagram" ? DIAGRAM_THEMES : THEMES)[key];
           Object.keys(t).forEach(function (k) {
             $("color-" + k).value = t[k];
           });
@@ -1586,12 +1620,18 @@
           });
           svg.style.setProperty(
             "--fb-highlight-border",
-            $("color-highlight").value,
+            state.renderMode === "diagram" ? $("color-highlight").value : mixHex($("color-highlight").value, "#ffffff", 0.36),
           );
           svg.style.setProperty(
             "--fb-root-text",
             readableText($("color-root").value),
           );
+        }
+        function mixHex(a, b, amount) {
+          return "#" + [1, 3, 5].map(function (i) {
+            var v = Math.round(parseInt(a.slice(i, i + 2), 16) * (1 - amount) + parseInt(b.slice(i, i + 2), 16) * amount);
+            return ("0" + v.toString(16)).slice(-2);
+          }).join("");
         }
         function readableText(hex) {
           var v = hex.slice(1),
@@ -1605,7 +1645,7 @@
         function reset() {
           state = clone(defaults);
           syncControls();
-          setTheme(THEMES.rosewood);
+          setTheme("rosewood");
           render();
           showToast("Options reset");
         }
@@ -1639,33 +1679,29 @@
           var source = fb.getSVG(),
             copy = source.cloneNode(true);
           copy.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-          var css = document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            "style",
-          );
-          css.textContent =
-            ".fretboard-wood{fill:var(--fb-wood);stroke:var(--fb-wood-edge);stroke-width:1}.fretboard-fretwire{stroke:var(--fb-fretwire);stroke-width:2.5}.fretboard-nut{fill:var(--fb-nut)}.fretboard-string{stroke:var(--fb-string);stroke-linecap:round}.fretboard-inlay{fill:var(--fb-inlay)}.fretboard-fret-number{fill:var(--fb-fret-number);font:600 13px Georgia}.fretboard-open-divider{stroke:var(--fb-open-divider);stroke-width:1;stroke-dasharray:2 3}.fretboard-note-dot{fill:var(--fb-note-bg);stroke:var(--fb-note-border);stroke-width:1.5}.fretboard-note-dot--highlight{fill:var(--fb-highlight-bg);stroke:var(--fb-highlight-border)}.fretboard-note-dot--root{fill:var(--fb-root-bg);stroke:var(--fb-root-bg)}.fretboard-note-label{fill:var(--fb-note-text);font:500 11px sans-serif}.fretboard-note-label--root{fill:var(--fb-root-text)}";
-          copy.insertBefore(css, copy.firstChild);
-          var style = getComputedStyle(source);
-          [
-            "--fb-wood",
-            "--fb-wood-edge",
-            "--fb-fretwire",
-            "--fb-nut",
-            "--fb-string",
-            "--fb-inlay",
-            "--fb-fret-number",
-            "--fb-note-bg",
-            "--fb-note-border",
-            "--fb-note-text",
-            "--fb-highlight-bg",
-            "--fb-highlight-border",
-            "--fb-root-bg",
-            "--fb-root-text",
-            "--fb-open-divider",
-          ].forEach(function (n) {
-            copy.style.setProperty(n, style.getPropertyValue(n));
+          var properties = [
+            "fill", "fill-opacity", "stroke", "stroke-width", "stroke-opacity",
+            "stroke-linecap", "stroke-linejoin", "stroke-dasharray", "opacity",
+            "font-family", "font-size", "font-weight", "font-variant-numeric",
+            "text-anchor", "dominant-baseline", "stop-color", "stop-opacity"
+          ];
+          var originalNodes = [source].concat(Array.from(source.querySelectorAll("*")));
+          var copiedNodes = [copy].concat(Array.from(copy.querySelectorAll("*")));
+          originalNodes.forEach(function (node, index) {
+            var computed = getComputedStyle(node);
+            properties.forEach(function (property) {
+              var value = computed.getPropertyValue(property);
+              // Keep internal paint references portable outside this page.
+              if (value.indexOf("url(") !== -1 && node.hasAttribute(property)) {
+                value = node.getAttribute(property);
+              }
+              if (value) copiedNodes[index].style.setProperty(property, value);
+            });
           });
+          var viewBox = source.viewBox.baseVal;
+          copy.setAttribute("width", viewBox.width);
+          copy.setAttribute("height", viewBox.height);
+          copy.style.removeProperty("filter");
           var blob = new Blob([new XMLSerializer().serializeToString(copy)], {
               type: "image/svg+xml;charset=utf-8",
             }),

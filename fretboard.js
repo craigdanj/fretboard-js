@@ -6,6 +6,7 @@
  * Usage:
  *   const fb = new Fretboard(document.getElementById('container'), {
  *     frets: 12,
+ *     renderMode: 'realistic', // 'realistic' | 'diagram' (original flat style)
  *     tuning: ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'], // low to high, string 6 -> 1
  *     leftHanded: false,   // true mirrors the whole board horizontally —
  *                          // nut on the right, fret 1 next to it, frets
@@ -28,6 +29,7 @@
  *   fb.setFretTaper(2.5); // more dramatic than real life
  *   fb.setFretTaper(0);   // back to equidistant
  *   fb.setLeftHanded(true);
+ *   fb.setRenderMode('diagram');
  *   fb.destroy();
  */
 
@@ -35,6 +37,7 @@
 	'use strict';
 
 	var SVG_NS = 'http://www.w3.org/2000/svg';
+	var nextInstanceId = 0;
 
 	var NOTE_NAMES_SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 	var NOTE_NAMES_FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
@@ -150,8 +153,13 @@
 	Fretboard.prototype._mergeOptions = function (opts) {
 		var tuning = opts.tuning || DEFAULT_TUNING.slice();
 		validateTuning(tuning);
+		var renderMode = opts.renderMode === undefined ? 'realistic' : opts.renderMode;
+		if (renderMode !== 'realistic' && renderMode !== 'diagram') {
+			throw new Error('Fretboard: renderMode must be "realistic" or "diagram"');
+		}
 		return {
 			frets: opts.frets || 12,
+			renderMode: renderMode,
 			tuning: tuning,
 			leftHanded: !!opts.leftHanded,
 			showOpenStrings: opts.showOpenStrings !== false,
@@ -179,6 +187,7 @@
 
 	Fretboard.prototype._build = function () {
 		clear(this.container);
+		this._id = 'fretboard-' + (++nextInstanceId);
 		this.svg = svgEl('svg', { class: 'fretboard-svg' });
 		this.container.appendChild(this.svg);
 		this._render();
@@ -208,14 +217,16 @@
 		// mirrored gutter's open-string notes clip against the viewBox edge.
 		var mirroredGutterAllowance = o.leftHanded ? gutter : 0;
 		var width = boardWidth + o.padding * 2 + gutter + mirroredGutterAllowance;
-		var height = boardHeight + o.padding * 2 + 28; // extra for fret-number row
+		var height = boardHeight + o.padding * 2 + (o.renderMode === 'realistic' ? 36 : 28);
 		return { numStrings: numStrings, boardWidth: boardWidth, boardHeight: boardHeight, width: width, height: height };
 	};
 
 	Fretboard.prototype._render = function () {
 		var o = this.options;
 		var d = this._dims();
+		d.realistic = o.renderMode === 'realistic';
 
+		this.svg.setAttribute('data-render-mode', o.renderMode);
 		this.svg.setAttribute('viewBox', '0 0 ' + d.width + ' ' + d.height);
 		this.svg.setAttribute('width', '100%');
 		this.svg.setAttribute('role', 'img');
@@ -226,14 +237,15 @@
 		var openStringGutter = o.showOpenStrings ? o.fretWidth * 0.55 : 0;
 		var boardX = o.padding + openStringGutter;
 		var boardY = o.padding;
+		d.edge = d.realistic ? Math.min(12, o.stringSpacing * 0.35, Math.max(0, o.padding - 2)) : 0;
+		d.woodY = boardY - d.edge;
+		d.woodHeight = d.boardHeight + d.edge * 2;
+		if (d.realistic) this._drawDefs(boardX, d);
 
 		var boardGroup = svgEl('g', { class: 'fretboard-board' });
 		this.svg.appendChild(boardGroup);
 
-		// Cover the full board through the last fret; the nut is drawn on top.
-		var woodWidth = d.boardWidth;
-		var woodX = this._mirrorRectX(boardX, d.boardWidth, boardX, woodWidth);
-		boardGroup.appendChild(this._rect(woodX, boardY, woodWidth, d.boardHeight, 'fretboard-wood', 3));
+		this._drawBody(boardGroup, boardX, d);
 
 		this._drawFretMarkers(boardGroup, boardX, boardY, d);
 		this._drawFrets(boardGroup, boardX, boardY, d);
@@ -242,6 +254,51 @@
 		this._drawFretNumbers(boardGroup, boardX, boardY, d);
 		if (o.showOpenStrings) this._drawOpenStrings(boardGroup, boardX, boardY, d, openStringGutter);
 		this._drawNotes(boardGroup, boardX, boardY, d, openStringGutter);
+	};
+
+	// Each instance owns its paint/clip IDs so several diagrams can share a page.
+	Fretboard.prototype._drawDefs = function (boardX, d) {
+		var defs = svgEl('defs');
+		this.svg.appendChild(defs);
+		var shade = svgEl('linearGradient', { id: this._id + '-shade', x1: 0, y1: 0, x2: 0, y2: 1 });
+		[[0, '#ffffff', 0.09], [0.16, '#ffffff', 0.025], [0.65, '#000000', 0.04], [1, '#000000', 0.28]].forEach(function (s) {
+			shade.appendChild(svgEl('stop', { offset: s[0], 'stop-color': s[1], 'stop-opacity': s[2] }));
+		});
+		defs.appendChild(shade);
+		var grain = svgEl('pattern', { id: this._id + '-grain', width: 240, height: 44, patternUnits: 'userSpaceOnUse' });
+		[
+			'M0 4 C60 1 160 9 240 4',
+			'M0 15 C80 24 180 8 240 15',
+			'M0 27 C90 21 170 34 240 27',
+			'M0 39 C70 33 180 44 240 39'
+		].forEach(function (path, index) {
+			grain.appendChild(svgEl('path', { d: path, fill: 'none', stroke: index % 2 ? '#ffffff' : '#000000', 'stroke-opacity': index % 2 ? 0.12 : 0.3, 'stroke-width': index % 2 ? 0.6 : 1 }));
+		});
+		defs.appendChild(grain);
+		var clip = svgEl('clipPath', { id: this._id + '-clip' });
+		clip.appendChild(this._rect(boardX, d.woodY, d.boardWidth, d.woodHeight, '', 5));
+		defs.appendChild(clip);
+	};
+
+	Fretboard.prototype._drawBody = function (group, boardX, d) {
+		if (!d.realistic) {
+			// Keep the original flat surface, including the full-width background fix.
+			group.appendChild(this._rect(boardX, d.woodY, d.boardWidth, d.woodHeight, 'fretboard-wood', 3));
+			return;
+		}
+		// The surface reaches the final fret and extends beyond the outer strings.
+		group.appendChild(this._rect(boardX, d.woodY + 3, d.boardWidth, d.woodHeight, 'fretboard-body-shadow', 5));
+		group.appendChild(this._rect(boardX, d.woodY, d.boardWidth, d.woodHeight, 'fretboard-wood', 5));
+		var texture = svgEl('g', { 'clip-path': 'url(#' + this._id + '-clip)', 'aria-hidden': 'true', 'pointer-events': 'none' });
+		var grain = this._rect(boardX, d.woodY, d.boardWidth, d.woodHeight, 'fretboard-grain');
+		grain.setAttribute('fill', 'url(#' + this._id + '-grain)');
+		texture.appendChild(grain);
+		var shade = this._rect(boardX, d.woodY, d.boardWidth, d.woodHeight, 'fretboard-surface-shade');
+		shade.setAttribute('fill', 'url(#' + this._id + '-shade)');
+		texture.appendChild(shade);
+		texture.appendChild(svgEl('line', { x1: boardX, y1: d.woodY + 1.5, x2: boardX + d.boardWidth, y2: d.woodY + 1.5, class: 'fretboard-edge-light' }));
+		texture.appendChild(svgEl('line', { x1: boardX, y1: d.woodY + d.woodHeight - 1.5, x2: boardX + d.boardWidth, y2: d.woodY + d.woodHeight - 1.5, class: 'fretboard-edge-dark' }));
+		group.appendChild(texture);
 	};
 
 	Fretboard.prototype._rect = function (x, y, w, h, cls, rx) {
@@ -361,34 +418,30 @@
 	};
 
 	Fretboard.prototype._drawFrets = function (group, boardX, boardY, d) {
-		var o = this.options;
 		var g = svgEl('g', { class: 'fretboard-frets' });
 		group.appendChild(g);
-		for (var i = 1; i <= o.frets; i++) {
+		for (var i = 1; i <= this.options.frets; i++) {
 			var x = this._mirrorX(boardX, d.boardWidth, this._fretX(boardX, i));
-			g.appendChild(
-				svgEl('line', {
-					x1: x,
-					y1: boardY,
-					x2: x,
-					y2: boardY + d.boardHeight,
-					class: 'fretboard-fretwire',
-				})
-			);
+			if (!d.realistic) {
+				g.appendChild(svgEl('line', { x1: x, y1: boardY, x2: x, y2: boardY + d.boardHeight, class: 'fretboard-fretwire' }));
+				continue;
+			}
+			g.appendChild(svgEl('line', { x1: x + 1.2, y1: d.woodY + 1, x2: x + 1.2, y2: d.woodY + d.woodHeight - 1, class: 'fretboard-fret-shadow' }));
+			g.appendChild(svgEl('line', { x1: x, y1: d.woodY + 1, x2: x, y2: d.woodY + d.woodHeight - 1, class: 'fretboard-fretwire' }));
+			g.appendChild(svgEl('line', { x1: x - 0.45, y1: d.woodY + 2, x2: x - 0.45, y2: d.woodY + d.woodHeight - 2, class: 'fretboard-fret-glint' }));
 		}
 	};
 
 	Fretboard.prototype._drawNut = function (group, boardX, boardY, d) {
-		var o = this.options;
-		group.appendChild(
-			svgEl('rect', {
-				x: this._mirrorRectX(boardX, d.boardWidth, boardX, o.nutWidth),
-				y: boardY,
-				width: o.nutWidth,
-				height: d.boardHeight,
-				class: 'fretboard-nut',
-			})
-		);
+		var x = this._mirrorRectX(boardX, d.boardWidth, boardX, this.options.nutWidth);
+		if (!d.realistic) {
+			group.appendChild(this._rect(x, boardY, this.options.nutWidth, d.boardHeight, 'fretboard-nut'));
+			return;
+		}
+		group.appendChild(this._rect(x, d.woodY, this.options.nutWidth, d.woodHeight, 'fretboard-nut', 2));
+		var shade = this._rect(x, d.woodY, this.options.nutWidth, d.woodHeight, 'fretboard-nut-shade', 2);
+		shade.setAttribute('fill', 'url(#' + this._id + '-shade)');
+		group.appendChild(shade);
 	};
 
 	Fretboard.prototype._drawStrings = function (group, boardX, boardY, d) {
@@ -404,6 +457,7 @@
 			// position: index 0, the lowest-pitched string, is drawn thickest
 			// regardless of where _stringY places it on the diagram.
 			var thickness = 1 + (d.numStrings - 1 - i) * 0.35;
+			if (d.realistic) g.appendChild(svgEl('line', { x1: startX, y1: y + 1, x2: endX, y2: y + 1, class: 'fretboard-string-shadow', 'stroke-width': thickness + 1 }));
 			g.appendChild(
 				svgEl('line', {
 					x1: startX,
@@ -414,6 +468,7 @@
 					'stroke-width': thickness.toFixed(2),
 				})
 			);
+			if (d.realistic) g.appendChild(svgEl('line', { x1: startX, y1: y - thickness * 0.22, x2: endX, y2: y - thickness * 0.22, class: 'fretboard-string-glint', 'stroke-width': Math.max(0.35, thickness * 0.25) }));
 		}
 	};
 
@@ -422,15 +477,16 @@
 		var g = svgEl('g', { class: 'fretboard-markers' });
 		group.appendChild(g);
 		var midY = boardY + d.boardHeight / 2;
+		var radius = d.realistic ? 4.5 : 5;
 
 		for (var i = 1; i <= o.frets; i++) {
 			var cx = this._fretCenterX(boardX, d.boardWidth, i);
 			if (DOUBLE_DOT_FRETS.indexOf(i) !== -1) {
 				var offset = d.boardHeight / 4;
-				g.appendChild(svgEl('circle', { cx: cx, cy: midY - offset, r: 5, class: 'fretboard-inlay' }));
-				g.appendChild(svgEl('circle', { cx: cx, cy: midY + offset, r: 5, class: 'fretboard-inlay' }));
+				g.appendChild(svgEl('circle', { cx: cx, cy: midY - offset, r: radius, class: 'fretboard-inlay' }));
+				g.appendChild(svgEl('circle', { cx: cx, cy: midY + offset, r: radius, class: 'fretboard-inlay' }));
 			} else if (SINGLE_DOT_FRETS.indexOf(i) !== -1) {
-				g.appendChild(svgEl('circle', { cx: cx, cy: midY, r: 5, class: 'fretboard-inlay' }));
+				g.appendChild(svgEl('circle', { cx: cx, cy: midY, r: radius, class: 'fretboard-inlay' }));
 			}
 		}
 	};
@@ -439,11 +495,11 @@
 		var o = this.options;
 		var g = svgEl('g', { class: 'fretboard-fret-numbers' });
 		group.appendChild(g);
-		var y = boardY + d.boardHeight + 20;
+		var y = boardY + d.boardHeight + d.edge + (d.realistic ? 21 : 20);
 		for (var i = 1; i <= o.frets; i++) {
 			if (SINGLE_DOT_FRETS.indexOf(i) === -1 && DOUBLE_DOT_FRETS.indexOf(i) === -1) continue;
 			var cx = this._fretCenterX(boardX, d.boardWidth, i);
-			var text = svgEl('text', { x: cx, y: y, class: 'fretboard-fret-number', 'text-anchor': 'middle' });
+			var text = svgEl('text', { x: cx, y: y, class: 'fretboard-fret-number' + (d.realistic && DOUBLE_DOT_FRETS.indexOf(i) !== -1 ? ' fretboard-fret-number--octave' : ''), 'text-anchor': 'middle' });
 			text.textContent = String(i);
 			g.appendChild(text);
 		}
@@ -516,13 +572,17 @@
 
 				if (o.highlight && !h.active) continue; // when a highlight set is given, only show matches
 
-				var dotClass = 'fretboard-note-dot' + (h.isRoot ? ' fretboard-note-dot--root' : h.active ? ' fretboard-note-dot--highlight' : '');
+				var dotClass = 'fretboard-note-dot' + (h.isRoot ? ' fretboard-note-dot--root' : h.active ? ' fretboard-note-dot--highlight' : '') + (d.realistic && f === 0 ? ' fretboard-note-dot--open' : '');
+				if (d.realistic) {
+					g.appendChild(svgEl('circle', { cx: cx, cy: y + 1.5, r: NOTE_DOT_RADIUS + 0.5, class: 'fretboard-note-shadow' }));
+					if (h.isRoot) g.appendChild(svgEl('circle', { cx: cx, cy: y, r: NOTE_DOT_RADIUS + 2.4, class: 'fretboard-root-ring' }));
+				}
 				g.appendChild(svgEl('circle', { cx: cx, cy: y, r: NOTE_DOT_RADIUS, class: dotClass }));
 
 				if (o.labelMode !== 'none') {
 					var text = svgEl('text', {
 						x: cx,
-						y: y + 4,
+						y: y + (d.realistic ? 3.7 : 4),
 						class: 'fretboard-note-label' + (h.isRoot ? ' fretboard-note-label--root' : ''),
 						'text-anchor': 'middle',
 					});
@@ -560,6 +620,11 @@
 	Fretboard.prototype.setLabelMode = function (mode) {
 		this.options.labelMode = mode;
 		this._render();
+	};
+
+	Fretboard.prototype.setRenderMode = function (mode) {
+		// Share constructor/setOptions validation before changing the live diagram.
+		this.setOptions({ renderMode: mode });
 	};
 
 	// Mirrors the whole board horizontally: nut moves to the right edge,

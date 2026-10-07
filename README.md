@@ -4,6 +4,8 @@ A dependency-free, plain-JavaScript plugin that renders a guitar fretboard as SV
 
 ## Features
 
+- Two render modes: `realistic` (default) for the new instrument finish, or `diagram` for the original flat style.
+- In realistic mode: subtle SVG wood grain, a shaded surface and edge, metallic fret wires, layered strings, and clearer note markers with a ring around root notes.
 - Renders the full fretboard — nut, frets, strings, and standard dot inlays — as a single inline SVG.
 - Labels every fret with its actual note name, computed from the tuning you pass in (not hardcoded per-string offsets), so any tuning works correctly, including the guitar's one irregular interval between the G and B strings.
 - Any number of strings — the string count is always `tuning.length`, so ukulele, 4-string bass, and 8-string guitar all work the same way as standard 6-string guitar. See "Any number of strings" below.
@@ -31,6 +33,7 @@ Then construct a fretboard against any container element:
 <script>
   const fb = new Fretboard(document.getElementById('fretboard-container'), {
     frets: 12,
+    renderMode: 'realistic', // or 'diagram'
     tuning: ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'], // low to high
   });
 </script>
@@ -53,6 +56,7 @@ Otherwise it attaches itself to `window.Fretboard` when loaded as a plain `<scri
 ```js
 new Fretboard(container, {
   frets: 12,
+  renderMode: 'realistic',  // 'realistic' | 'diagram'
   tuning: ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'], // low to high; any string count works — see "Any number of strings" below
   leftHanded: false,       // true mirrors the board — see "Left-handed mode" below
   showOpenStrings: true,
@@ -70,6 +74,7 @@ new Fretboard(container, {
 | Option | Default | Description |
 |---|---|---|
 | `frets` | `12` | Number of frets to draw. |
+| `renderMode` | `'realistic'` | `'realistic'` uses the textured design; `'diagram'` uses the original flat design. Validated in the constructor, `setOptions()`, and `setRenderMode()`. |
 | `tuning` | standard EADGBE | Array of note names, **low string to high string** (index 0 = lowest pitch). The number of strings drawn is always `tuning.length` — pass an array of any length. Accepts sharps or flats, e.g. `'F#3'`, `'Bb2'`. Must be a non-empty array; an empty array throws. |
 | `leftHanded` | `false` | Mirrors the whole board horizontally — nut on the right, fret 1 next to it, frets increasing toward the left. See "Left-handed mode" below. |
 | `showOpenStrings` | `true` | Draws a small zone to the left of the nut with each string's open-note label. In `leftHanded` mode, this zone (and its notes) correctly relocates to the right of the nut instead. |
@@ -81,6 +86,37 @@ new Fretboard(container, {
 | `stringSpacing` | `34` | Vertical distance (px) between adjacent strings. |
 | `nutWidth` | `14` | Width (px) of the nut. |
 | `padding` | `28` | Padding (px) around the whole diagram. |
+
+### Render modes
+
+```js
+const fb = new Fretboard(container, {
+  renderMode: 'diagram', // original flat design
+  frets: 12,
+});
+
+fb.setRenderMode('realistic'); // switch to the new finish
+fb.setOptions({ renderMode: 'diagram', frets: 15 });
+```
+
+| Mode | Appearance |
+|---|---|
+| `realistic` (default) | Wood grain, shaded edges, metallic frets and strings, note shadows, amber roots with a fine outer ring, and a small wood margin beyond the outer strings. |
+| `diagram` | Original flat surface, brass fret wires, single-line strings, purple highlights, mint roots, and the original label styling and spacing. No texture, gradients, shadows, or root rings. |
+
+Both modes retain the full-width background fix, tuning, highlighting, labels,
+fret taper, and handedness. Changing modes updates the existing SVG and keeps
+the other options. Realistic mode is eight SVG units taller to accommodate its
+finished edge and fret numbers.
+
+Omitting `renderMode` (or passing `undefined`) selects `realistic`. Other values
+besides the two supported strings throw before modifying the displayed board.
+
+The main playground has an **Appearance → Render mode** selector. Copied
+configuration includes the chosen mode, and SVG export retains its appearance.
+Named theme presets use the corresponding mode's palette; manually customized
+colors remain when switching. Reset restores the realistic Rosewood default.
+The simpler `index_old.html` demo starts in diagram mode and also has a selector.
 
 ### Any number of strings
 
@@ -106,7 +142,7 @@ new Fretboard(container, { tuning: ['F#1', 'B1', 'E2', 'A2', 'D3', 'G3', 'B3', '
 A few things worth knowing:
 
 - **`tuning` must be a non-empty array.** An empty array throws a clear error, both from the constructor and from `setTuning()` — there's no silent fallback, since a zero-length tuning would otherwise produce a negative, broken board height.
-- **A single-string tuning is allowed.** It produces a flat, minimal diagram (zero board height) rather than being rejected — unusual, but not an error.
+- **A single-string tuning is allowed.** Realistic mode adds a small wood margin above and below the string; diagram mode retains the original zero-height flat board.
 - Everything else — note computation, highlighting, fret taper, left-handed mirroring — is completely independent of string count and works the same way regardless of how many strings are drawn.
 - The board's height and each string's relative thickness scale automatically with the string count; there's nothing to configure separately.
 
@@ -168,6 +204,7 @@ fb.setFretTaper(0);   // back to equidistant
 
 | Method | Description |
 |---|---|
+| `setRenderMode(mode)` | Switch between `'realistic'` and `'diagram'` and re-render. Invalid values throw before changing the board. |
 | `setFrets(frets)` | Change the number of frets and re-render. |
 | `setTuning(tuning)` | Change the tuning (array, low to high) and re-render. The new array can be a different length than the current one — string count always follows `tuning.length`. Throws if `tuning` isn't a non-empty array. |
 | `setHighlight(highlight)` | Update the highlighted note set (or pass `null` to clear it) and re-render. |
@@ -184,29 +221,49 @@ fb.setFretTaper(0);   // back to equidistant
 
 ## Theming
 
-All colors are CSS custom properties scoped to `.fretboard-svg`, so retheming doesn't require touching any JavaScript:
+Colors remain CSS custom properties scoped to `.fretboard-svg`. In realistic mode, the default
+finish pairs dark rosewood with muted green scale notes and warm amber roots.
+The demo also includes Midnight and Maple presets plus custom color controls.
 
 ```css
 .fretboard-svg {
-  --fb-wood: #2b1b12;         /* fretboard body */
-  --fb-wood-edge: #1c1109;
-  --fb-fretwire: #c9a66b;     /* fret wire */
-  --fb-nut: #f5e6c8;
-  --fb-string: #e9dcc0;
-  --fb-inlay: rgba(245, 230, 200, 0.35);
-  --fb-fret-number: #a9835a;
-  --fb-note-bg: #4a2f1e;      /* default note dot */
-  --fb-note-border: #7a5636;
-  --fb-note-text: #f5e6c8;
-  --fb-highlight-bg: #8b5e3c; /* highlighted (non-root) note dot */
-  --fb-highlight-border: #c9a66b;
-  --fb-root-bg: #c9a66b;      /* root note dot */
-  --fb-root-text: #2b1b12;
-  --fb-open-divider: rgba(245, 230, 200, 0.25);
+  --fb-wood: #33251f;
+  --fb-wood-edge: #160f0d;
+  --fb-fretwire: #b6aaa0;
+  --fb-nut: #eee4d2;
+  --fb-string: #d6c7ac;
+  --fb-inlay: rgba(238, 224, 198, 0.5);
+  --fb-fret-number: #a69b89;
+  --fb-note-bg: #40332c;
+  --fb-note-border: #8c7764;
+  --fb-note-text: #fff7e8;
+  --fb-highlight-bg: #315d4c;
+  --fb-highlight-border: #86b59c;
+  --fb-root-bg: #edc27c;
+  --fb-root-text: #302415;
+  --fb-open-divider: rgba(214, 199, 172, 0.2);
+  --fb-grain-opacity: 0.5;
 }
 ```
 
-Override any subset of these in your own stylesheet, scoped to your container, to reskin the board without editing `fretboard.css` directly.
+Override any subset in a stylesheet loaded after `fretboard.css`, or scope the
+rule to your container, for example `#my-fretboard .fretboard-svg`. For overrides
+that apply to both modes, use that container scope or set variables inline on
+the SVG. Diagram defaults use `.fretboard-svg[data-render-mode="diagram"]`.
+Set
+`--fb-grain-opacity: 0` for a smooth finish. The grain, shading, and highlights
+are vector shapes: no images, fonts, or other assets need to be downloaded.
+Each instance has its own SVG paint IDs so multiple boards can share a page.
+
+In realistic mode the wood surface extends beyond the outer strings. Both modes
+reach the final fret in either handedness layout. Note pitches and fret-center
+positions remain the same across the modes.
+
+The playground preserves readable note sizes on narrow screens by allowing
+horizontal scrolling. Its **Download SVG** action copies resolved presentation
+styles and explicit dimensions into the exported file, retaining the selected
+colors and new surface details without requiring `fretboard.css` alongside it.
+`getSVG()` still returns the live SVG element; it does not embed external styles.
 
 ## Known limitations
 
