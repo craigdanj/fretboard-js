@@ -102,12 +102,13 @@ fb.setOptions({ renderMode: 'diagram', frets: 15 });
 | Mode | Appearance |
 |---|---|
 | `realistic` (default) | Wood grain, shaded edges, metallic frets and strings, note shadows, amber roots with a fine outer ring, and a small wood margin beyond the outer strings. |
-| `diagram` | Original flat surface, brass fret wires, single-line strings, purple highlights, mint roots, and the original label styling and spacing. No texture, gradients, shadows, or root rings. |
+| `diagram` | Original flat surface, brass fret wires, single-line strings, purple highlights, mint roots, and the original label styling, with extra clearance below the note circles for fret numbers. No texture, gradients, shadows, or root rings. |
 
 Both modes retain the full-width background fix, tuning, highlighting, labels,
 fret taper, and handedness. Changing modes updates the existing SVG and keeps
-the other options. Realistic mode is eight SVG units taller to accommodate its
-finished edge and fret numbers.
+the other options. Each mode reserves space for its fret-number row. Diagram
+mode places the number baseline 30 SVG units below the lowest string, leaving
+clearance below the note circles and enough room at the bottom of the SVG.
 
 Omitting `renderMode` (or passing `undefined`) selects `realistic`. Other values
 besides the two supported strings throw before modifying the displayed board.

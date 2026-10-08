@@ -217,7 +217,7 @@
 		// mirrored gutter's open-string notes clip against the viewBox edge.
 		var mirroredGutterAllowance = o.leftHanded ? gutter : 0;
 		var width = boardWidth + o.padding * 2 + gutter + mirroredGutterAllowance;
-		var height = boardHeight + o.padding * 2 + (o.renderMode === 'realistic' ? 36 : 28);
+		var height = boardHeight + o.padding * 2 + (o.renderMode === 'realistic' ? 36 : 38);
 		return { numStrings: numStrings, boardWidth: boardWidth, boardHeight: boardHeight, width: width, height: height };
 	};
 
@@ -495,7 +495,7 @@
 		var o = this.options;
 		var g = svgEl('g', { class: 'fretboard-fret-numbers' });
 		group.appendChild(g);
-		var y = boardY + d.boardHeight + d.edge + (d.realistic ? 21 : 20);
+		var y = boardY + d.boardHeight + d.edge + (d.realistic ? 21 : 30);
 		for (var i = 1; i <= o.frets; i++) {
 			if (SINGLE_DOT_FRETS.indexOf(i) === -1 && DOUBLE_DOT_FRETS.indexOf(i) === -1) continue;
 			var cx = this._fretCenterX(boardX, d.boardWidth, i);
